@@ -11,36 +11,183 @@ Created on Tue Sep 29 10:17:30 2026
 import pandas as pd
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
 
 # %% 2. Load Data
+
 df = pd.read_csv(
         "loan_data.csv",
         sep=None
         )
-df_model = df[["revol.util", "fico", "int.rate"]]
-df_model.columns = ['revol_util', 'fico', 'int_rate']
+
+df_model = df[[
+    "int.rate",
+    "revol.util", 
+    "fico",
+    "installment",
+    "log.annual.inc",
+    "dti",
+    "days.with.cr.line",
+    "revol.bal",
+    "inq.last.6mths",
+    "delinq.2yrs",
+    "pub.rec",
+    ]]
+
+df_model.columns = [
+    'int_rate',
+    'revol_util',
+    'fico',
+    'installment',
+    'log_annual_inc',
+    'dti',
+    'days_credit_line',
+    'revolv_bal',
+    'inq_last_6_months',
+    'delinq_2yrs',
+    'public_rec',
+    ]
 
 df_model['int_rate'] = df_model['int_rate'] * 100
+
+# Annual Income is log, so we will annalyze both log and annual income to understand why should we use log.
+
+df_model["annual_income"] = np.exp(df_model["log_annual_inc"]) / 1000
 
 df_sample = df_model.sample(n=1000, random_state = 50)
 print(df_sample)
 print(df_sample.isna().sum())
 
-# Scatter plot - interest rate vs revol_util
+# %% 3. Exploring Data Analysis - Relationships with Interest Rate
+
+# 3.1 - Interest Rate vs Revolving Utilization Rate
 
 plt.figure()
 plt.scatter(df_sample["revol_util"], df_sample["int_rate"])
-plt.xlabel("revol_util")
-plt.ylabel("interest_rate")
+plt.xlabel("Revolving Line Utilization (%)")
+plt.ylabel("Interest Rate (%)")
+plt.title("Interest Rate vs Revolving Credit Utilization Rate")
+plt.grid(True, linestyle="--", alpha=0.5)
 plt.show()
 
-# Scatter plot - interest rate vs Fico
+# 3.2 - Interest Rate vs Fico Score
 
 plt.figure()
-plt.scatter(df_sample["fico"], df_sample["int_rate"])
-plt.xlabel("fico")
-plt.ylabel("interest_rate")
+plt.scatter(df_sample["fico"],df_sample["int_rate"])
+plt.xlabel("Fico Score")
+plt.ylabel("Interest Rate (%)")
+plt.title("Interest Rate vs Fico Score") 
+plt.grid(True, linestyle="--", alpha=0.5)
 plt.show()
+
+# 3.3 - Interest Rate vs Installment
+
+plt.figure()
+plt.scatter(df_sample["installment"], df_sample["int_rate"])
+plt.xlabel("Installment - Monthly")
+plt.ylabel("Interest Rate (%)")
+plt.title("Interest Rate vs Monthly Installments")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.show()
+
+# 3.4 - Interest Rate vs Annual Income 
+
+plt.figure()
+plt.scatter(df_sample["annual_income"], df_sample["int_rate"])
+plt.xlabel("Annual Income ($ 1000)")
+plt.ylabel("Interest Rate (%)")
+plt.title("Interest Rate vs Annual Income")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.show()
+
+# 3.5 - Interest Rate vs Annual Income(log)
+
+plt.figure()
+plt.scatter(df_sample["log_annual_inc"], df_sample["int_rate"])
+plt.xlabel("Annual Income (log)")
+plt.ylabel("Interest Rate (%)")
+plt.title("Interest Rate vs Annual Income")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.show()
+
+# 3.6 - Interest Rate vs Debt-to-Income Ratio
+
+plt.figure()
+plt.scatter(df_sample["dti"], df_sample["int_rate"])
+plt.xlabel("Debt-to-Income")
+plt.ylabel("Interest Rate (%)")
+plt.title("Interest Rate vs Debt-to-Income Ratio")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.show()
+
+# 3.7 - Interest Rate vs Days with Credit Line
+
+plt.figure()
+plt.scatter(df_sample["days_credit_line"], df_sample["int_rate"])
+plt.xlabel("Days with Credit Line")
+plt.ylabel("Interest Rate (%)")
+plt.title("Interest Rate vs Days with Credit Line")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.show()
+
+
+# 3.8 - Interest Rate vs Revolving Balance
+
+plt.figure()
+plt.scatter(df_sample["revolv_bal"], df_sample["int_rate"])
+plt.xlabel("Revolving Balance ($)")
+plt.ylabel("Interest Rate (%)")
+plt.title("Interest Rate vs Revolving Balance")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.show()
+
+
+# 3.9 - Interest Rate vs Inquiries in the Last 6 Months
+
+plt.figure()
+sns.boxplot(data=df_sample, x="inq_last_6_months", y="int_rate")
+plt.xlabel("Credit Inquiries - last 6 Months")
+plt.ylabel("Interest Rate (%)")
+plt.title("Interest Rate vs Credit Inquiries")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.show()
+
+# 3.10 - Interest Rate vs Delinquencies in the Last 2 Years
+
+plt.figure()
+sns.boxplot(data=df_sample, x="delinq_2yrs", y="int_rate")
+plt.xlabel("Delinquencies in the Last 2 Years")
+plt.ylabel("Interest Rate (%)")
+plt.title("Interest Rate vs Delinquencies")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.show()
+
+
+# 3.11 - Interest Rate vs Public Records
+
+plt.figure()
+sns.boxplot(data=df_sample, x="public_rec", y="int_rate")
+plt.xlabel("Number of Derogatory Public Records")
+plt.ylabel("Interest Rate (%)")
+plt.title("Interest Rate vs Public Records")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.show()
+
+
+# %% 4. Correlation Matrix (Pearson Correlations)
+
+correlation_matrix = (df_sample.corr()).round(2)
+print(correlation_matrix)
+
+
+
+
+
+
+
+
+
 
 
 x = df_sample[["revol_util", "fico"]]
