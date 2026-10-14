@@ -1,7 +1,6 @@
-**Lending Club — Statistical Analysis
-**
-**Project Overview
-**
+**Lending Club — Statistical Analysis**
+
+**Project Overview**
 This project explores Lending Club loan data using Python and statistical analysis techniques.
 
 The main objective is to investigate relationships between borrowers’ financial characteristics and loan interest rates, applying statistical concepts learned throughout my M.S. in Business Analytics program at San Francisco State University.
@@ -10,8 +9,7 @@ This project is part of my ongoing development in statistics, data analytics, an
 
 Project Status: Work in Progress
 
-**Research Questions
-**
+**Research Questions**
 The analysis focuses on understanding:
 
 * How do borrowers’ FICO scores relate to loan interest rates?
@@ -19,8 +17,7 @@ The analysis focuses on understanding:
 * Can we estimate loan interest rates using borrowers’ financial characteristics?
 * How well does a multiple linear regression model explain variations in interest rates?
 
-**Dataset
-**
+**Dataset**
 Source: Lending Club Loan Data — Kaggle
 
 The dataset contains information about loans and borrower characteristics.
@@ -32,8 +29,7 @@ The initial analysis focuses on three variables:
 revol_util	Revolving credit utilization
 int_rate	Loan interest rate
 
-**Tools and Technologies
-**
+**Tools and Technologies**
 * Python: Data analysis and statistical modeling
 * Pandas: Data cleaning and manipulation
 * NumPy: Numerical operations
@@ -41,8 +37,7 @@ int_rate	Loan interest rate
 * Statsmodels: Regression analysis and statistical inference
 * Spyder: Python development environment
 
-**Statistical Methods
-**
+**Statistical Methods**
 The project currently focuses on:
 
 * Exploratory Data Analysis (EDA)
@@ -54,14 +49,12 @@ The project currently focuses on:
 
 Additional methods and model improvements will be incorporated as the project develops.
 
-**Project Development
-**
+**Project Development**
 This project is being developed progressively alongside my graduate statistics coursework.
 
 The goal is to move from exploratory statistical analysis toward more advanced modeling techniques while documenting the analytical process, assumptions, and results.
 
-**Future Improvements
-**
+**Future Improvements**
 Planned improvements include:
 
 * Expanding the exploratory data analysis
