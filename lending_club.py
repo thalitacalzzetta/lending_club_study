@@ -12,7 +12,7 @@ import pandas as pd
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
 
-
+# %% 2. Load Data
 df = pd.read_csv(
         "loan_data.csv",
         sep=None
