@@ -6,6 +6,8 @@ Created on Tue Sep 29 10:17:30 2026
 @author: tcalzzetta
 """
 
+# %% 1. Important Libraries
+
 import pandas as pd
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
