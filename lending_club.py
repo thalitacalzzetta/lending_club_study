@@ -180,17 +180,30 @@ plt.show()
 correlation_matrix = (df_sample.corr()).round(2)
 print(correlation_matrix)
 
+plt.figure(figsize=(12, 10))
+sns.heatmap(
+    correlation_matrix,
+    annot=True,
+    fmt=".2f",
+    cmap="coolwarm"
+)
+plt.title("Correlation Matrix - Lending Club")
+plt.show()
 
+# %% 5. Modeling
 
-
-
-
-
-
-
-
-
-x = df_sample[["revol_util", "fico"]]
+x = df_sample[[
+    'revol_util',
+    'fico',
+    'installment',
+    'log_annual_inc',
+    'dti',
+    'days_credit_line',
+    'revolv_bal',
+    'inq_last_6_months',
+    'delinq_2yrs',
+    'public_rec',
+    ]]
 x = sm.add_constant(x)
 
 y = df_sample["int_rate"]
@@ -212,6 +225,8 @@ plt.ylabel("Residuals")
 plt.show()
 
 plt.hist(df_sample["residuals"], bins=100)
+
+# %% 6. Testing the Model excluding one variable per time (variables with the highest p-values)
 
 
 
