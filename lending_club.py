@@ -408,5 +408,5 @@ df_models = pd.DataFrame(
     models,
     columns = columns_models,
     )
-df_models = df_models.set_index("Model")
+df_models = round(df_models.set_index("Model"),4)
 print(df_models)
