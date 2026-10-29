@@ -247,14 +247,14 @@ x_pub = df_sample[[
 
 x_pub = sm.add_constant(x_pub)
 
-model_pub = sm.OLS(y, x_pub).fit()
-print(model_pub.summary())
+model_1 = sm.OLS(y, x_pub).fit()
+print(model_1.summary())
 
-round(model_pub.pvalues.sort_values(ascending=False),2)
+round(model_1.pvalues.sort_values(ascending=False),2)
 
 # %% 6.2 - Removing delinq_2yrs
 
-x_del = df_sample[[
+x_2 = df_sample[[
     'days_credit_line',
     'log_annual_inc',
     'revol_util',
@@ -265,16 +265,16 @@ x_del = df_sample[[
     'fico'
     ]]
 
-x_del = sm.add_constant(x_del)
+x_2 = sm.add_constant(x_2)
 
-model_del = sm.OLS(y, x_del).fit()
-print(model_del.summary())
+model_2 = sm.OLS(y, x_2).fit()
+print(model_2.summary())
 
-round(model_del.pvalues.sort_values(ascending=False),2)
+round(model_2.pvalues.sort_values(ascending=False),2)
 
 # %% 6.3 - Removing days_credit_line
 
-x_cred = df_sample[[
+x_3 = df_sample[[
     'log_annual_inc',
     'revol_util',
     'inq_last_6_months',
@@ -284,17 +284,17 @@ x_cred = df_sample[[
     'fico'
     ]]
 
-x_cred = sm.add_constant(x_cred)
+x_3 = sm.add_constant(x_3)
 
-model_cred = sm.OLS(y, x_cred).fit()
-print(model_cred.summary())
+model_3 = sm.OLS(y, x_3).fit()
+print(model_3 .summary())
 
-round(model_cred.pvalues.sort_values(ascending=False),2)
+round(model_3 .pvalues.sort_values(ascending=False),2)
 
 
 # %% 6.4 - Removing log_annual_inc
 
-x_log = df_sample[[
+x_4 = df_sample[[
     'revol_util',
     'inq_last_6_months',
     'revolv_bal',
@@ -303,17 +303,17 @@ x_log = df_sample[[
     'fico'
     ]]
 
-x_log = sm.add_constant(x_log)
+x_4 = sm.add_constant(x_4)
 
-model_log = sm.OLS(y, x_log).fit()
-print(model_log.summary())
+model_4 = sm.OLS(y, x_4).fit()
+print(model_4.summary())
 
-round(model_log.pvalues.sort_values(ascending=False),2)
+round(model_4.pvalues.sort_values(ascending=False),2)
 
 
 # %% 6.5 - Removing revol_util
 
-x_util = df_sample[[
+x_5 = df_sample[[
     'inq_last_6_months',
     'revolv_bal',
     'dti',
@@ -321,39 +321,39 @@ x_util = df_sample[[
     'fico'
     ]]
 
-x_util = sm.add_constant(x_util)
+x_5 = sm.add_constant(x_5)
 
-model_util = sm.OLS(y, x_util).fit()
-print(model_util.summary())
+model_5 = sm.OLS(y, x_5).fit()
+print(model_5.summary())
 
-round(model_util.pvalues.sort_values(ascending=False),2)
+round(model_5.pvalues.sort_values(ascending=False),2)
 
 # %% 6.6 - Removing inq_last_6_months
 
-x_inq = df_sample[[
+x_6 = df_sample[[
     'revolv_bal',
     'dti',
     'installment',
     'fico'
     ]]
 
-x_inq = sm.add_constant(x_inq)
+x_6 = sm.add_constant(x_6)
 
-model_inq = sm.OLS(y, x_inq).fit()
-print(model_inq.summary())
+model_6 = sm.OLS(y, x_6).fit()
+print(model_6.summary())
 
-round(model_inq.pvalues.sort_values(ascending=False),2)
+round(model_6.pvalues.sort_values(ascending=False),2)
 
 # %% Creating list with p-values after each remodeling
 
 dic_models = {
     "Original Model": model,
-    "Model 1": model_pub,
-    "Model 2":model_del,
-    "Model 3":model_cred,
-    "Model 4":model_log,
-    "Model 5": model_util,
-    "Model 6": model_inq
+    "Model 1": model_1,
+    "Model 2":model_2,
+    "Model 3":model_3,
+    "Model 4":model_4,
+    "Model 5": model_5,
+    "Model 6": model_6
     }
 
 p_values_dic = {}
@@ -385,7 +385,6 @@ for key, regression in dic_models.items():
     statistics = (
         key,
         r_squared,
-        r_squared_adj,
         f_value,
         f_pvalue,
         SSE_model
@@ -398,7 +397,6 @@ for key, regression in dic_models.items():
 columns_models = [
     "Model",
     "R-squared",
-    "R-squared Adjusted",
     "F-statistic",
     "P( F-statistic)",
     "SSE"
@@ -408,5 +406,90 @@ df_models = pd.DataFrame(
     models,
     columns = columns_models,
     )
-df_models = round(df_models.set_index("Model"),4)
+df_models = round(df_models.set_index("Model"),5)
 print(df_models)
+
+
+    
+
+# Considering the possible correlation between int_rate and installment, I will create a new model before applying log.
+
+# %% Creating new model to evaluate a possible correlation between int_rate and installment.
+
+# 1.1 - Model 6 excluding installment.
+
+x_7 = df_sample[[
+    'revolv_bal',
+    'dti',
+    'fico'
+    ]]
+
+x_7 = sm.add_constant(x_7)
+
+model_7 = sm.OLS(y, x_7).fit()
+print(model_7.summary())
+
+round(model_7.pvalues.sort_values(ascending=False),2)
+
+# %% Choosing 4 models to compare.
+
+# 1. Analyzing residuals both "Original Model", "model 4" and "model 6".
+
+# 1.1 - Predicted and Residuals
+
+df_residuals = pd.DataFrame(df_sample["int_rate"])
+
+df_models_residuals = {
+    "Original Model": [model, x],
+    "Model 4": [model_4, x_4],
+    "Model 6": [model_6, x_6],
+    "Model 7": [model_7, x_7]}
+
+for name, (model_version, x_version) in df_models_residuals.items():
+    predicted_models = model_version.predict(x_version)
+    
+    df_residuals[f"{name} - predicted"] = predicted_models
+    
+    df_residuals[f"{name} - residuals"] = df_residuals["int_rate"] - predicted_models
+    
+print(df_residuals)
+
+# 1.2 - Scatter Plot and histogram - predicted vs residuals
+
+models_names = ["Original Model", "Model 4", "Model 6", "Model 7"]
+
+for name in models_names:
+    
+    predicted = df_residuals[f"{name} - predicted"]
+    residuals = df_residuals[f"{name} - residuals"]
+    
+    plt.figure()
+    plt.scatter(predicted, residuals)
+    plt.axhline(y=0)
+    plt.xlabel(f"predicted - {name}")
+    plt.ylabel(f"residuals - {name}")
+    plt.show()
+    
+    plt.figure()
+    plt.hist(residuals, bins=20)
+    plt.title(f"Residual Distribution - {name}")
+    plt.show()
+
+# Considering that installment is not in the model 7, the model performs better (because revolv_util is now relevant).
+# Before validate the models and choose the one that best predicts the interest_rate, I want to build models with categorical variables,
+# that based on my experience, can have influence in the interest rate.
+
+# %% Working with categorical variables.
+
+# 1. Credit purpose.
+
+# This is the categorical variable available in the dataset. We will build a model with categorical variables and understand the model.
+
+df_sample['purpose'] = df.loc[df_sample.index, 'purpose']
+
+# 1.1 - Creating the categories.
+
+categories = df_sample["purpose"].value_counts()
+
+df_sample["purpose_cat"] = pd.Categorical(df_sample["purpose"], categories=categories)
+# i need to create dummy variables. 
