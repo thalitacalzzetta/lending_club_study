@@ -489,7 +489,38 @@ df_sample['purpose'] = df.loc[df_sample.index, 'purpose']
 
 # 1.1 - Creating the categories.
 
-categories = df_sample["purpose"].value_counts()
+categories = df_sample["purpose"].value_counts().index
 
 df_sample["purpose_cat"] = pd.Categorical(df_sample["purpose"], categories=categories)
-# i need to create dummy variables. 
+
+# 1.2 - Creating Dummies.
+
+dummies_purpose = pd.get_dummies(df_sample["purpose_cat"], drop_first=True, dtype=int)
+
+df_sample = pd.concat([df_sample, dummies_purpose], axis=1)
+
+# 2.0 - Creating the new model (with dummies)
+
+df_sample.info()
+
+x_dummy = df_sample[[
+    "all_other",
+    "credit_card",
+    "home_improvement",
+    "small_business",
+    "major_purchase",
+    "educational",
+    "revolv_bal",
+    'dti',
+    'fico'
+    ]]
+
+x_dummy = sm.add_constant(x_dummy)
+
+model_dummy = sm.OLS(y, x_dummy).fit()
+
+summary_dummy = model_dummy.summary()
+
+
+
+
