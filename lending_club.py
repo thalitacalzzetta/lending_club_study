@@ -431,32 +431,75 @@ print(model_7.summary())
 
 round(model_7.pvalues.sort_values(ascending=False),2)
 
+# %% Working with categorical variables.
+
+# 1. Credit purpose.
+
+# This is the categorical variable available in the dataset. We will build a model with categorical variables and understand the model.
+
+df_sample['purpose'] = df.loc[df_sample.index, 'purpose']
+
+# 1.1 - Creating the categories.
+
+categories = df_sample["purpose"].value_counts().index
+
+df_sample["purpose_cat"] = pd.Categorical(df_sample["purpose"], categories=categories)
+
+# 1.2 - Creating Dummies.
+
+dummies_purpose = pd.get_dummies(df_sample["purpose_cat"], drop_first=True, dtype=int)
+
+df_sample = pd.concat([df_sample, dummies_purpose], axis=1)
+
+# %% Evaluating Additive and Interaction Models
+
+import statsmodels.formula.api as smf
+
+# Additive Model
+
+model_additive = smf.ols(
+    "int_rate ~ fico + dti + revolv_bal + C(purpose_cat)",
+    data=df_sample
+).fit()
+
+print(model_additive.summary())
+
+
+#  Interaction model
+
+model_interaction = smf.ols(
+    "int_rate ~ (fico + dti + revolv_bal) * C(purpose_cat)",
+    data=df_sample
+).fit()
+
+print(model_interaction.summary())
+
 # %% Choosing 4 models to compare.
 
-# 1. Analyzing residuals both "Original Model", "model 4" and "model 6".
+# 1. Analyzing residuals both "Original Model", "model 4", "model 6", "model 7".
 
 # 1.1 - Predicted and Residuals
 
 df_residuals = pd.DataFrame(df_sample["int_rate"])
 
 df_models_residuals = {
-    "Original Model": [model, x],
-    "Model 4": [model_4, x_4],
-    "Model 6": [model_6, x_6],
-    "Model 7": [model_7, x_7]}
+    "Original Model": model,
+    "Model 4": model_4,
+    "Model 6": model_6,
+    "Model 7": model_7,
+    "Additive Model": model_additive,
+    "Interaction Model": model_interaction}
 
-for name, (model_version, x_version) in df_models_residuals.items():
-    predicted_models = model_version.predict(x_version)
+for name, model_version in df_models_residuals.items():
     
-    df_residuals[f"{name} - predicted"] = predicted_models
-    
-    df_residuals[f"{name} - residuals"] = df_residuals["int_rate"] - predicted_models
+    df_residuals[f"{name} - predicted"] = model_version.fittedvalues
+    df_residuals[f"{name} - residuals"] = model_version.resid
     
 print(df_residuals)
 
 # 1.2 - Scatter Plot and histogram - predicted vs residuals
 
-models_names = ["Original Model", "Model 4", "Model 6", "Model 7"]
+models_names = ["Original Model", "Model 4", "Model 6", "Model 7", "Additive Model", "Interaction Model"]
 
 for name in models_names:
     
@@ -479,48 +522,54 @@ for name in models_names:
 # Before validate the models and choose the one that best predicts the interest_rate, I want to build models with categorical variables,
 # that based on my experience, can have influence in the interest rate.
 
-# %% Working with categorical variables.
+# %% New table for the selected models.
 
-# 1. Credit purpose.
+model_final = {
+    "Original Model": model,
+    "Model 4": model_4,
+    "Model 6": model_6,
+    "Model 7": model_7,
+    "Additive Model": model_additive,
+    "Interaction Model": model_interaction
+    }
 
-# This is the categorical variable available in the dataset. We will build a model with categorical variables and understand the model.
+selected_models = []
 
-df_sample['purpose'] = df.loc[df_sample.index, 'purpose']
+for name_model, model_number in model_final.items():
+    r_squared = (model_number.rsquared)
+    r_squared_adj = (model_number.rsquared_adj)
+    f_value = (model_number.fvalue)
+    f_pvalue = (model_number.f_pvalue)
+    SSE_model = (model_number.ssr)
+    
+    statistics = (
+        name_model,
+        r_squared,
+        r_squared_adj,
+        f_value,
+        f_pvalue,
+        SSE_model
+        )
+    
+    selected_models.append(
+        statistics
+        )
 
-# 1.1 - Creating the categories.
+columns_models_final = [
+    "Model",
+    "R-squared",
+    "R-squared (adj)",
+    "F-statistic",
+    "P( F-statistic)",
+    "SSE"
+    ]
 
-categories = df_sample["purpose"].value_counts().index
-
-df_sample["purpose_cat"] = pd.Categorical(df_sample["purpose"], categories=categories)
-
-# 1.2 - Creating Dummies.
-
-dummies_purpose = pd.get_dummies(df_sample["purpose_cat"], drop_first=True, dtype=int)
-
-df_sample = pd.concat([df_sample, dummies_purpose], axis=1)
-
-# 2.0 - Creating the new model (with dummies)
-
-df_sample.info()
-
-x_dummy = df_sample[[
-    "all_other",
-    "credit_card",
-    "home_improvement",
-    "small_business",
-    "major_purchase",
-    "educational",
-    "revolv_bal",
-    'dti',
-    'fico'
-    ]]
-
-x_dummy = sm.add_constant(x_dummy)
-
-model_dummy = sm.OLS(y, x_dummy).fit()
-
-summary_dummy = model_dummy.summary()
-
-
+df_models_final = pd.DataFrame(
+    selected_models,
+    columns = columns_models_final,
+    )
+df_models_final = round(df_models_final.set_index("Model"),5)
+print(df_models_final)
 
 
+    
