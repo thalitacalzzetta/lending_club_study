@@ -558,7 +558,7 @@ for name_model, model_number in model_final.items():
 columns_models_final = [
     "Model",
     "R-squared",
-    "R-squared (adj)",
+    "R-squared (adj)", 
     "F-statistic",
     "P( F-statistic)",
     "SSE"
@@ -571,5 +571,100 @@ df_models_final = pd.DataFrame(
 df_models_final = round(df_models_final.set_index("Model"),5)
 print(df_models_final)
 
+#%% Model Selection - Applying R-squared, CP, AIC, BIC and PRESS.
 
+model_validation = []
+
+full_model = smf.ols(
+    """int_rate ~ public_rec + delinq_2yrs
+    + days_credit_line + log_annual_inc
+    + revol_util + inq_last_6_months
+    + installment
+    + (fico + dti + revolv_bal) * C(purpose_cat)""",
+    data=df_sample
+).fit()
+
+
+
+for name_model, model_number in model_final.items():
+    r_squared = (model_number.rsquared)
+    r_squared_adj = (model_number.rsquared_adj)
+    AIC = model_number.aic
+    BIC = model_number.bic
     
+    # Mallows' Cp
+    
+    n = model_number.nobs
+    p = model_number.df_model + 1
+    cp = (model_number.ssr / full_model.mse_resid) - n + 2*p
+
+    # PRESS
+    residuals = model_number.resid
+    leverage = model_number.get_influence().hat_matrix_diag
+
+    press = np.sum((residuals / (1 - leverage))**2)
+    
+    metrics = (
+        name_model,
+        r_squared,
+        r_squared_adj,
+        AIC,
+        BIC,
+        cp,
+        press
+        )
+    
+    model_validation.append(metrics)
+    
+    columns_validation = [
+        "Model",
+        "r_squared",
+        "r_squared_adj",
+        "AIC",
+        "BIC",
+        "cp",
+        "press"]
+    
+df_model_validation = pd.DataFrame(
+   model_validation,
+   columns=columns_validation)
+    
+df_model_validation = df_model_validation.set_index("Model")
+
+# Selecting the best of each criteria. 
+
+max_rsquared = df_model_validation.loc[df_model_validation["r_squared"].idxmax(), :]
+
+max_adjrsquared = df_model_validation.loc[df_model_validation["r_squared_adj"].idxmax(), :]
+
+min_cp = df_model_validation.loc[df_model_validation["cp"].idxmin(), :]
+
+min_aic = df_model_validation.loc[df_model_validation["AIC"].idxmin(), :]
+
+min_bic = df_model_validation.loc[df_model_validation["BIC"].idxmin(), :]
+
+press = df_model_validation.loc[df_model_validation["press"].idxmin(), :]
+
+metrics_final = {
+    "Highest R-squared": max_rsquared["r_squared"],
+    "Highest Adjusted R-squared": max_adjrsquared["r_squared_adj"],
+    "Lowest Cp": min_cp["cp"],
+    "Lowest AIC": min_aic["AIC"],
+    "Lowest BIC": min_bic["BIC"],
+    "Lowest PRESS": press["press"]
+}
+
+metrics_comparison = pd.DataFrame(
+    list(metrics_final.items()),
+    columns=["Criterion", "Value"])
+
+metrics_comparison["Selected Model"] = [
+    max_rsquared.name,
+    max_adjrsquared.name,
+    min_cp.name,
+    min_aic.name,
+    min_bic.name,
+    press.name
+]
+
+metrics_comparison = metrics_comparison.set_index("Criterion")
