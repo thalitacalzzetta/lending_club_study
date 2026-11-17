@@ -668,3 +668,353 @@ metrics_comparison["Selected Model"] = [
 ]
 
 metrics_comparison = metrics_comparison.set_index("Criterion")
+
+#%% Model selection - Forward, Backward and Stepwise.
+
+# We will use categorical variables but we are not producing interaction ****
+
+# We will exclude "installment from the predictors"
+
+# Defining stepwise function (using AIC):
+    
+def stepwise_selection(
+    data,
+    response,
+    initial_list=[],
+    direction="both",
+    scope=None,
+    trace=True,
+):
+    """Replicates R's step() function using statsmodels OLS and AIC."""
+    if scope is None:
+        scope = [c for c in data.columns if c != response]
+
+    selected = list(initial_list)
+    current_formula = (
+        f"{response} ~ " + " + ".join(selected) if selected else f"{response} ~ 1"
+    )
+    current_model = smf.ols(current_formula, data=data).fit()
+    current_aic = current_model.aic
+
+    if trace:
+        print(
+            f"Initial Model: {current_formula} | AIC: {current_aic:.4f}"
+        )
+
+    while True:
+        best_candidate = None
+        best_aic = current_aic
+        best_action = None
+
+        # Try adding predictors (forward step)
+        if direction in ["forward", "both"]:
+            candidates_to_add = [c for c in scope if c not in selected]
+            for candidate in candidates_to_add:
+                test_vars = selected + [candidate]
+                formula = f"{response} ~ " + " + ".join(test_vars)
+                res = smf.ols(formula, data=data).fit()
+                if res.aic < best_aic:
+                    best_aic = res.aic
+                    best_candidate = candidate
+                    best_action = "add"
+
+        # Try removing predictors (backward step)
+        if direction in ["backward", "both"]:
+            for candidate in selected:
+                test_vars = [c for c in selected if c != candidate]
+                formula = (
+                    f"{response} ~ " + " + ".join(test_vars)
+                    if test_vars
+                    else f"{response} ~ 1"
+                )
+                res = smf.ols(formula, data=data).fit()
+                if res.aic < best_aic:
+                    best_aic = res.aic
+                    best_candidate = candidate
+                    best_action = "drop"
+
+        # Check if an improvement was found
+        if best_action == "add":
+            selected.append(best_candidate)
+            current_aic = best_aic
+            if trace:
+                print(
+                    f"  + Added: {best_candidate} -> New AIC: {current_aic:.4f}"
+                )
+        elif best_action == "drop":
+            selected.remove(best_candidate)
+            current_aic = best_aic
+            if trace:
+                print(
+                    f"  - Dropped: {best_candidate} -> New AIC: {current_aic:.4f}"
+                )
+        else:
+            break
+
+    final_formula = (
+        f"{response} ~ " + " + ".join(selected) if selected else f"{response} ~ 1"
+    )
+    final_model = smf.ols(final_formula, data=data).fit()
+
+    if trace:
+        print(
+            f"Final Formula: {final_formula} | Final AIC: {final_model.aic:.4f}\n"
+        )
+
+    return final_model
+
+#%% Forward selection:
+    
+x_cols = [
+    "public_rec",
+    "delinq_2yrs",
+    "days_credit_line",
+    "log_annual_inc",
+    "revol_util",
+    "inq_last_6_months",
+    "revolv_bal",
+    "dti",
+    "fico",
+    "C(purpose_cat)"
+]
+
+result_forward = stepwise_selection(
+    df_sample,
+    response= "int_rate",
+    initial_list=[],
+    direction="forward",
+    scope=x_cols,
+    trace=True)
+
+print(result_forward.summary())
+
+#%% Backward Selection
+
+result_backward = stepwise_selection(
+    df_sample,
+    response="int_rate",
+    initial_list=x_cols,
+    direction="backward",
+    scope=x_cols,
+    trace=True)
+
+print(result_backward.summary())
+
+#%% Stepwise Selection
+
+result_step = stepwise_selection(
+    df_sample,
+    response="int_rate",
+    initial_list=[],
+    direction="both",
+    scope=x_cols,
+    trace=True)
+
+print(result_step.summary())
+
+#%% #%% Model selection - Forward, Backward and Stepwise.
+
+# We will use categorical variables but we are not producing interaction ****
+
+# Defining stepwise function (using PRESS):
+    
+def stepwise_selection_press(
+    data,
+    response,
+    initial_list=[],
+    direction="both",
+    scope=None,
+    trace=True,
+):
+    """Replicates R's step() function using statsmodels OLS and PRESS."""
+    if scope is None:
+        scope = [c for c in data.columns if c != response]
+
+    selected = list(initial_list)
+    current_formula = (
+        f"{response} ~ " + " + ".join(selected) if selected else f"{response} ~ 1"
+    )
+    current_model = smf.ols(current_formula, data=data).fit()
+    
+    # PRESS
+    residuals = current_model.resid
+    leverage = current_model.get_influence().hat_matrix_diag
+
+    current_press = np.sum((residuals / (1 - leverage))**2)
+
+    if trace:
+        print(
+            f"Initial Model: {current_formula} | PRESS: {current_press:.4f}"
+        )
+
+    while True:
+        best_candidate = None
+        best_press = current_press
+        best_action = None
+
+        # Try adding predictors (forward step)
+        if direction in ["forward", "both"]:
+            candidates_to_add = [c for c in scope if c not in selected]
+            for candidate in candidates_to_add:
+                test_vars = selected + [candidate]
+                formula = f"{response} ~ " + " + ".join(test_vars)
+                res = smf.ols(formula, data=data).fit()
+                
+                # PRESS
+                residuals_res = res.resid
+                leverage_res = res.get_influence().hat_matrix_diag
+
+                press_res = np.sum((residuals_res / (1 - leverage_res))**2)
+                
+                if press_res < best_press:
+                    best_press = press_res
+                    best_candidate = candidate
+                    best_action = "add"
+
+        # Try removing predictors (backward step)
+        if direction in ["backward", "both"]:
+            for candidate in selected:
+                test_vars = [c for c in selected if c != candidate]
+                formula = (
+                    f"{response} ~ " + " + ".join(test_vars)
+                    if test_vars
+                    else f"{response} ~ 1"
+                )
+                res = smf.ols(formula, data=data).fit()
+                
+                # PRESS
+                residuals_res = res.resid
+                leverage_res = res.get_influence().hat_matrix_diag
+
+                press_res = np.sum((residuals_res / (1 - leverage_res))**2)
+                
+                if press_res < best_press:
+                    best_press = press_res
+                    best_candidate = candidate
+                    best_action = "drop"
+
+        # Check if an improvement was found
+        if best_action == "add":
+            selected.append(best_candidate)
+            current_press = best_press
+            if trace:
+                print(
+                    f"  + Added: {best_candidate} -> New PRESS: {current_press:.4f}"
+                )
+        elif best_action == "drop":
+            selected.remove(best_candidate)
+            current_press = best_press
+            if trace:
+                print(
+                    f"  - Dropped: {best_candidate} -> New PRESS: {current_press:.4f}"
+                )
+        else:
+            break
+
+    final_formula = (
+        f"{response} ~ " + " + ".join(selected) if selected else f"{response} ~ 1"
+    )
+    final_model = smf.ols(final_formula, data=data).fit()
+
+    if trace:
+        # PRESS
+        residuals_final = final_model.resid
+        leverage_final = final_model.get_influence().hat_matrix_diag
+
+        press_final = np.sum((residuals_final / (1 - leverage_final))**2)
+        
+        print(
+            f"Final Formula: {final_formula} | Final PRESS: {press_final:.4f}\n"
+        )
+
+    return final_model
+
+#%% Forward selection:
+
+result_forward_press_cat = stepwise_selection_press(
+    df_sample,
+    response= "int_rate",
+    initial_list=[],
+    direction="forward",
+    scope=x_cols,
+    trace=True)
+
+print(result_forward_press_cat.summary())
+
+#%% Backward Selection
+
+result_backward_press_cat = stepwise_selection_press(
+    df_sample,
+    response="int_rate",
+    initial_list=x_cols,
+    direction="backward",
+    scope=x_cols,
+    trace=True)
+
+print(result_backward_press_cat.summary())
+
+#%% Stepwise Selection
+
+result_step_press_cat = stepwise_selection_press(
+    df_sample,
+    response="int_rate",
+    initial_list=[],
+    direction="both",
+    scope=x_cols,
+    trace=True)
+
+print(result_step_press_cat.summary())
+
+#%% Model Selection without categoricals.
+
+x_cols_test = [
+    "public_rec",
+    "delinq_2yrs",
+    "days_credit_line",
+    "log_annual_inc",
+    "revol_util",
+    "inq_last_6_months",
+    "revolv_bal",
+    "dti",
+    "fico",
+]
+
+#%% Forward selection:
+
+result_forward_press = stepwise_selection_press(
+    df_sample,
+    response= "int_rate",
+    initial_list=[],
+    direction="forward",
+    scope=x_cols_test,
+    trace=True)
+
+print(result_forward_press.summary())
+
+#%% Backward Selection
+
+result_backward_press = stepwise_selection_press(
+    df_sample,
+    response="int_rate",
+    initial_list=x_cols_test,
+    direction="backward",
+    scope=x_cols_test,
+    trace=True)
+
+print(result_backward_press.summary())
+
+#%% Stepwise Selection
+
+result_step_press = stepwise_selection_press(
+    df_sample,
+    response="int_rate",
+    initial_list=[],
+    direction="both",
+    scope=x_cols_test,
+    trace=True)
+
+print(result_step_press.summary())
+
+
+
+
